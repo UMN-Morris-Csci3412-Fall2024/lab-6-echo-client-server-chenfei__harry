@@ -7,28 +7,46 @@ import java.net.Socket;
 
 public class EchoClient {
     private static final String HOST = "localhost";
-    private static final int PORT = 12345;  // Same port as server
+    private static final int PORT = 6013;
 
     public static void main(String[] args) {
         try (Socket socket = new Socket(HOST, PORT)) {
-            InputStream input = System.in;
+            InputStream userInput = System.in;
             OutputStream output = socket.getOutputStream();
             InputStream socketInput = socket.getInputStream();
-            OutputStream socketOutput = System.out;
+            OutputStream consoleOutput = System.out;
 
-            int byteData;
-            // Send data to server
-            while ((byteData = input.read()) != -1) {
-                output.write(byteData);
-            }
-            output.flush();  // Ensure all data is sent before closing
+            Thread senderThread = new Thread(() -> {
+                try {
+                    int byteData;
+                    while ((byteData = userInput.read()) != -1) {
+                        output.write(byteData);
+                    }
+                    output.flush();
+                } catch (IOException e) {
+                    System.err.println("Error sending data: " + e.getMessage());
+                }
+            });
 
-            // Echo data received from server to standard output
-            while ((byteData = socketInput.read()) != -1) {
-                socketOutput.write(byteData);
-            }
-            socketOutput.flush();
-        } catch (IOException e) {
+            Thread receiverThread = new Thread(() -> {
+                try {
+                    int byteData;
+                    while ((byteData = socketInput.read()) != -1) {
+                        consoleOutput.write(byteData);
+                    }
+                    consoleOutput.flush();
+                } catch (IOException e) {
+                    System.err.println("Error receiving data: " + e.getMessage());
+                }
+            });
+
+            senderThread.start();
+            receiverThread.start();
+
+            senderThread.join(); 
+            receiverThread.join(); 
+
+        } catch (IOException | InterruptedException e) {
             System.err.println("Client error: " + e.getMessage());
         }
     }
