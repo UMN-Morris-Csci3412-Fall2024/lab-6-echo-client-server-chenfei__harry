@@ -6,48 +6,34 @@ import java.io.IOException;
 import java.net.Socket;
 
 public class EchoClient {
-    private static final String HOST = "localhost";
-    private static final int PORT = 6013;
+    public static final int PORT = 6013;  // Required port number
+    public static void main(String[] args) throws IOException {
+        String host;
+        // Default to "localhost" if no host is provided, otherwise use the first argument as the host
+        if (args.length == 0) {
+            host = "127.0.0.1";
+        } else {
+            host = args[0];
+        }
+        try (Socket clientSocket = new Socket(host, PORT)) {
+            InputStream serverInput = clientSocket.getInputStream();
+            OutputStream serverOutput = clientSocket.getOutputStream();
 
-    public static void main(String[] args) {
-        try (Socket socket = new Socket(HOST, PORT)) {
-            InputStream userInput = System.in;
-            OutputStream output = socket.getOutputStream();
-            InputStream socketInput = socket.getInputStream();
-            OutputStream consoleOutput = System.out;
+            int byteData;
+            while ((byteData = System.in.read()) != -1) {
+                serverOutput.write(byteData);
+                serverOutput.flush();
+            }
 
-            Thread senderThread = new Thread(() -> {
-                try {
-                    int byteData;
-                    while ((byteData = userInput.read()) != -1) {
-                        output.write(byteData);
-                    }
-                    output.flush();
-                } catch (IOException e) {
-                    System.err.println("Error sending data: " + e.getMessage());
-                }
-            });
+            clientSocket.shutdownOutput(); // Indicate that no more data will be sent to the server
 
-            Thread receiverThread = new Thread(() -> {
-                try {
-                    int byteData;
-                    while ((byteData = socketInput.read()) != -1) {
-                        consoleOutput.write(byteData);
-                    }
-                    consoleOutput.flush();
-                } catch (IOException e) {
-                    System.err.println("Error receiving data: " + e.getMessage());
-                }
-            });
-
-            senderThread.start();
-            receiverThread.start();
-
-            senderThread.join(); 
-            receiverThread.join(); 
-
-        } catch (IOException | InterruptedException e) {
-            System.err.println("Client error: " + e.getMessage());
+            // Receive echoed data from the server and print it to standard output
+            while ((byteData = serverInput.read()) != -1) {
+                System.out.write(byteData);
+            }
+            System.out.flush();
+        } catch (IOException ex) {
+            System.err.println("Connection error: " + ex.getMessage());
         }
     }
 }
