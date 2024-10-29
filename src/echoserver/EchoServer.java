@@ -8,7 +8,7 @@ import java.net.Socket;
 
 public class EchoServer {
     
-    private static final int PORT = 6013;  // Define port number
+    private static final int PORT = 6013;  
 
     public static void main(String[] args) {
         try (ServerSocket serverSocket = new ServerSocket(PORT)) {
